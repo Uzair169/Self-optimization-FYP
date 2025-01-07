@@ -6,6 +6,8 @@
 Clone the repo and run 
 `docker compose up --build` in the main folder
 
+`localhost:9099` for Prometheus Web <br>
+`localhost:3000` for Grafana, default username/password is admin/admin.
 
 
 
