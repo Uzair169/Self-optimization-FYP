@@ -1,0 +1,93 @@
+version: '3'
+
+services:
+
+  price:
+    build:
+      context: ./price  # This assumes price_manager.py and Dockerfile are in the 'price' folder
+      dockerfile: Dockerfile
+    container_name: price
+    ports:
+      - "2000:2000"
+  
+  
+  optimize:
+    build:
+      context: ./optimize  # This assumes optimize.py and Dockerfile are in the main folder
+      dockerfile: Dockerfile
+    container_name: optimize
+    ports:
+      - "5000:5000"
+      - "9099:9099"  # Prometheus metrics
+    depends_on:
+      - customer1
+      - customer2
+      - customer3
+      - customer4
+    # networks:
+    #   - energy_network
+    # environment:
+    #   FLASK_ENV: development  # Optional: Useful for debugging
+
+
+  customer1:
+    build:
+      context: ./customer1
+      dockerfile: Dockerfile
+    container_name: customer1
+    ports:
+      - "5001:5001"
+
+  customer2:
+    build:
+      context: ./customer2
+      dockerfile: Dockerfile
+    container_name: customer2
+    ports:
+      - "5002:5002"
+
+  customer3:
+    build:
+      context: ./customer3
+      dockerfile: Dockerfile
+    container_name: customer3
+    ports:
+      - "5003:5003"
+
+  customer4:
+    build:
+      context: ./customer4
+      dockerfile: Dockerfile
+    container_name: customer4
+    ports:
+      - "5004:5004"
+
+
+  cbat:
+    build:
+      context: ./cbat
+      dockerfile: Dockerfile
+    container_name: cbat
+    ports:
+      - "8080:8080"
+
+  cpv:
+    build:
+      context: ./cpv
+      dockerfile: Dockerfile
+    container_name: cpv
+    ports:
+      - "8081:8080"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"  # Prometheus Web UI
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml 
+
+# networks:
+#   energy_network:
+#     driver: bridge
+
