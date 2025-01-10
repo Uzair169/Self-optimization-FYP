@@ -24,6 +24,8 @@ services:
       - customer2
       - customer3
       - customer4
+      - customer5
+      - customer6
     # networks:
     #   - energy_network
     # environment:
@@ -61,6 +63,22 @@ services:
     container_name: customer4
     ports:
       - "5004:5004"
+
+  customer5:
+    build: 
+      context: ./customer5
+      dockerfile: Dockerfile
+    container_name: customer5
+    ports:
+      - "5005:5005"
+
+  customer6:
+    build: 
+      context: ./customer6
+      dockerfile: Dockerfile
+    container_name: customer6
+    ports:
+      - "5006:5006"
 
 
   cbat:
