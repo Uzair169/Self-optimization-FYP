@@ -7,12 +7,11 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY . /app
 
-# Install Flask and requests
-RUN pip install Flask requests prometheus-client 
+# Install Flask
+RUN pip install Flask pandapower requests
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
-EXPOSE 9100
+# Make port 5005 available to the world outside this container
+EXPOSE 5005
 
 # Define the command to start the service
-CMD ["python", "optimize.py"]
+CMD ["python", "customer5.py"]
