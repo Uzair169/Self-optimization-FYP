@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Install Flask
-RUN pip install Flask
+RUN pip install Flask requests
 
 # Expose the port
 EXPOSE 8080

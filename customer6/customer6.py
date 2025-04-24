@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 import pandapower as pp
 import requests
+import random
 
 app = Flask(__name__)
 
@@ -21,68 +22,67 @@ def customer6_measure():
     if not price_info:
         return jsonify({"error": "Unable to fetch price information"}), 500
 
-    # Create a new empty network for Customer 2 (Residential with PV generation)
+    # Create a new empty network for Customer 6
     net = pp.create_empty_network()
 
-    # Add buses for Customer 2
-    customer_bus2 = pp.create_bus(net, vn_kv=0.4, name="Customer Bus 6")
+    # Add bus for Customer 6
+    customer_bus6 = pp.create_bus(net, vn_kv=0.4, name="Customer Bus 6")
 
-    # Add an external grid to supply power to the system
-    pp.create_ext_grid(net, bus=customer_bus2, vm_pu=1.02, name="External Grid")
+    # Add external grid
+    pp.create_ext_grid(net, bus=customer_bus6, vm_pu=1.02, name="External Grid")
 
-    # Add a larger load to Customer Bus 6 (representing a customer with consumption)
-    pp.create_load(net, bus=customer_bus2, p_mw=4.0, q_mvar=1.5, name="Customer Load 6")
+    # Randomize load (consumption)
+    active_power = round(random.uniform(3.0, 5.0), 2)
+    reactive_power = round(random.uniform(1.0, 2.0), 2)
+    pp.create_load(net, bus=customer_bus6, p_mw=active_power, q_mvar=reactive_power, name="Customer Load 6")
 
-    # Add a smaller PV generation to Customer Bus 6 (with negative power to indicate generation)
-    pp.create_sgen(net, bus=customer_bus2, p_mw=-2.0, q_mvar=0.0, name="PV Generation", type='PV')
+    # Randomize PV generation
+    pv_active_power = round(random.uniform(1.0, 4.0), 2)
+    pp.create_sgen(net, bus=customer_bus6, p_mw=-pv_active_power, q_mvar=0.0, name="PV Generation", type='PV')
 
-    # Run power flow calculation
+    # Run power flow
     pp.runpp(net)
 
-    # Get active and reactive power results for Customer 6
-    load2_results = net.res_load.loc[0, ['p_mw', 'q_mvar']]
+    # Get results
+    load6_results = net.res_load.loc[0, ['p_mw', 'q_mvar']]
     pv_results = net.res_sgen.loc[0, ['p_mw', 'q_mvar']]
 
-    # Prepare output (total power consumed or produced by Customer 6)
-    total_active_power = load2_results.p_mw + pv_results.p_mw
-    total_reactive_power = load2_results.q_mvar + pv_results.q_mvar
-
-    # Decision-making logic based on price information and constraints
+    total_active_power = load6_results.p_mw + pv_results.p_mw
+    total_reactive_power = load6_results.q_mvar + pv_results.q_mvar
 
     transaction_decision = "No Transaction"
 
-    # If Customer 6 is generating more energy than it consumes
-    if total_active_power > 0:  # Surplus Generation
-        # 1. Sell excess energy to residential/commercial customers
-        if price_info['p2pSelling'] > price_info['p2pBuying']:
-            transaction_decision = "Selling to Residential/Commercial Customer"
-        # 2. If selling to other customers isn't favorable, store in the Community Battery
-        elif price_info['cBatterySelling'] < price_info['cBatteryBuying']:
+    # Surplus condition (generation > consumption, total_active_power > 0 means net demand)
+    if total_active_power < 0:  # Net export
+        # Residential customers can sell to residential customers
+        if price_info['p2pSelling'] > price_info['cBatterySelling']:
+            transaction_decision = "Selling to Residential Customer"
+        # Can sell to commercial customers too
+        elif price_info['p2pSelling'] > price_info['gridSelling']:
+            transaction_decision = "Selling to Commercial Customer"
+        # Or sell to community battery
+        elif price_info['cBatterySelling'] > price_info['gridSelling']:
             transaction_decision = "Selling to Community Battery"
-        # 3. Otherwise, store energy in the Community Battery
         else:
-            transaction_decision = "Using Community Battery"
+            transaction_decision = "Selling to Retailer"
 
-    # If Customer 6 needs more energy than it generates
-    else:  # Energy Deficit
-        # 1. Residential customers can buy from residential or commercial customers
+    # Deficit condition (consumption > generation)
+    else:
+        # Buy from residential/commercial customers
         if price_info['p2pBuying'] < price_info['cBatteryBuying'] and price_info['p2pBuying'] <= price_info['cPVBuying']:
             transaction_decision = "Buying from Residential/Commercial Customer"
-        # 2. Residential customers can sell to other residential customers
-        elif price_info['p2pSelling'] > price_info['p2pBuying']:
-            transaction_decision = "Selling to Residential Customer"
-        # 3. Residential customers can buy from Community PV
+        # Buy from community PV
         elif price_info['cPVBuying'] < price_info['p2pBuying'] and price_info['cPVBuying'] < price_info['cBatteryBuying']:
             transaction_decision = "Buying from Community PV"
-        # 4. All customers can buy and sell to/from retailer and battery storage system
-        elif price_info['gridBuying'] > price_info['gridSelling']:
+        # Buy from retailer
+        elif price_info['gridBuying'] < price_info['cBatteryBuying']:
             transaction_decision = "Buying from Retailer"
 
-    # Final decision based on preferred residential customer rule:
+    # Fallback
     if transaction_decision == "No Transaction":
         transaction_decision = "Using Community Battery"
 
-    # Prepare output
+    # Output
     output = {
         "active_power": total_active_power,
         "reactive_power": total_reactive_power,

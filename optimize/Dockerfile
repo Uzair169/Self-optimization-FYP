@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Install Flask and requests
-RUN pip install Flask requests prometheus-client 
+RUN pip install Flask requests prometheus-client flask_cors
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000

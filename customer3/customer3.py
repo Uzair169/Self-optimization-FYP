@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 import pandapower as pp
 import requests
+import random
 
 app = Flask(__name__)
 
@@ -13,6 +14,12 @@ def get_price_info():
     except requests.exceptions.RequestException as e:
         print(f"Error fetching price info: {e}")
         return None
+
+# Function to generate random active and reactive power
+def get_random_power():
+    active_power = round(random.uniform(4.0, 6.0), 2)  # Active power between 4.0 and 6.0 MW
+    reactive_power = round(random.uniform(1.5, 3.0), 2)  # Reactive power between 1.5 and 3.0 MVAR
+    return active_power, reactive_power
 
 @app.route('/measure', methods=['GET'])
 def customer3_measure():
@@ -30,8 +37,11 @@ def customer3_measure():
     # Add an external grid to supply power to the system
     pp.create_ext_grid(net, bus=customer_bus3, vm_pu=1.02, name="External Grid")
 
+    # Generate random active and reactive power for Customer 3 load
+    load_active_power, load_reactive_power = get_random_power()
+
     # Add a load to Customer Bus 3 (representing a commercial customer with consumption)
-    pp.create_load(net, bus=customer_bus3, p_mw=5.0, q_mvar=2.0, name="Customer Load 3")
+    pp.create_load(net, bus=customer_bus3, p_mw=load_active_power, q_mvar=load_reactive_power, name="Customer Load 3")
 
     # Run power flow calculation
     pp.runpp(net)

@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 import pandapower as pp
 import requests
+import random
 
 app = Flask(__name__)
 
@@ -15,29 +16,33 @@ def get_price_info():
         return None
 
 @app.route('/measure', methods=['GET'])
-def customer1_measure():
+def customer5_measure():
     # Fetch price info
     price_info = get_price_info()
     if not price_info:
         return jsonify({"error": "Unable to fetch price information"}), 500
 
-    # Create a new empty network for Customer 1
+    # Create a new empty network for Customer 5
     net = pp.create_empty_network()
 
-    # Add buses for Customer 1
-    customer_bus1 = pp.create_bus(net, vn_kv=0.4, name="Customer Bus 5")
+    # Add buses for Customer 5
+    customer_bus5 = pp.create_bus(net, vn_kv=0.4, name="Customer Bus 5")
 
     # Add an external grid to supply power to the system
-    pp.create_ext_grid(net, bus=customer_bus1, vm_pu=1.02, name="External Grid")
+    pp.create_ext_grid(net, bus=customer_bus5, vm_pu=1.02, name="External Grid")
 
-    # Add a load to Customer Bus 1 (representing a customer without generation)
-    pp.create_load(net, bus=customer_bus1, p_mw=3.0, q_mvar=1.0, name="Customer Load 5")
+    # Randomize the active and reactive power consumption (representing a residential customer)
+    active_power = round(random.uniform(2.5, 4.0), 2)  # Random value for active power
+    reactive_power = round(random.uniform(0.5, 1.5), 2)  # Random value for reactive power
+
+    # Add a load to Customer Bus 5 (representing a residential customer with random consumption)
+    pp.create_load(net, bus=customer_bus5, p_mw=active_power, q_mvar=reactive_power, name="Customer Load 5")
 
     # Run power flow calculation
     pp.runpp(net)
 
     # Get active and reactive power results for Customer 5
-    load1_results = net.res_load.loc[0, ['p_mw', 'q_mvar']]
+    load5_results = net.res_load.loc[0, ['p_mw', 'q_mvar']]
 
     # Decision-making logic based on price information and constraints
     transaction_decision = "No Transaction"
@@ -70,8 +75,8 @@ def customer1_measure():
 
     # Prepare output
     output = {
-        "active_power": load1_results.p_mw,
-        "reactive_power": load1_results.q_mvar,
+        "active_power": load5_results.p_mw,
+        "reactive_power": load5_results.q_mvar,
         "transaction_decision": transaction_decision
     }
 

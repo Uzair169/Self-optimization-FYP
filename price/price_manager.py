@@ -4,8 +4,8 @@ app = Flask(__name__)
 
 # Define prices for various transactions (in EUR cents per kWh)
 prices = {
-    "gridSelling": 0,          # Selling energy to the grid (3rd Party)
-    "gridBuying": 0,           # Buying energy from the grid
+    "gridSelling": 3,          # Selling energy to the grid (3rd Party)
+    "gridBuying": 20,           # Buying energy from the grid
     "p2pSelling": 10,          # Selling energy Peer-to-Peer (P2P)
     "p2pBuying": 15,           # Buying energy Peer-to-Peer (P2P)
     "cBatterySelling": 7,      # Selling energy to/from Community Battery
